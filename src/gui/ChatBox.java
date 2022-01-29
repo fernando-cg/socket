@@ -1,13 +1,18 @@
 package gui;
 
-import socket.Cliente;
+import socketC.Envios;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
 
-public class ChatBox extends JFrame {
+public class ChatBox extends JFrame implements Runnable{
     private JPanel panel;
     private JButton submit;
     private JLabel etiqueta;
@@ -18,12 +23,12 @@ public class ChatBox extends JFrame {
     int width = screen.width;
     int height= screen.height;
 
+    String  ip;
+    String nick ;
 
+//Dos hilos 1 escucha 2 envio
 
-    public ChatBox(){
-
-
-
+    public ChatBox(String ip,String nick){
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setTitle("Sistema de conexion por sockets");
         setSize(width/4,height/2);
@@ -31,12 +36,18 @@ public class ChatBox extends JFrame {
         setResizable(false);
         iniciarComponentes();
         setVisible(true);
+
+        this.ip = ip ;
+        this.nick = nick ;
+
     }
 
     private void iniciarComponentes() {
         colocarPanel();
         colocarEtiqueta();
         colocarElementos();
+        Thread receptor = new Thread(this) ;
+        receptor.start();
     }
 
     private void colocarPanel() {
@@ -77,11 +88,39 @@ public class ChatBox extends JFrame {
 
             @Override
             public void actionPerformed(ActionEvent e) {
+                try {
+                    Socket socket = new Socket("localhost",4444);
+                    Envios message = new Envios(nick,ip,tfmessage.getText()) ;
+                    ObjectOutputStream buffer = new ObjectOutputStream(socket.getOutputStream()) ;
+                    buffer.writeObject(message);
+                    socket.close();
+                    tfmessage.setText("");
+                } catch (IOException ex) {
+                    System.out.println("Se ha producido un error: " + ex.getMessage());
 
-
+                }
             }
         };
         submit.addActionListener(eventoClic);
+
+    }
+
+    @Override
+    public void run() {
+        try {
+            ServerSocket receptor = new ServerSocket(5555) ;
+            do {
+                Socket client = receptor.accept();
+                ObjectInputStream input = new ObjectInputStream(client.getInputStream()) ;
+                Envios message = (Envios) input.readObject();
+                chat.append("[" + message.getNick() + "] =>" + message.getMensaje() + "\n");
+            }while(true) ;
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(null,"Ha habido un error a la hora de ponerse en escucha","ERROR",JOptionPane.ERROR_MESSAGE);
+        } catch (ClassNotFoundException e) {
+            JOptionPane.showMessageDialog(null,"Ha habido un error a la hora de recibir el mensaje","ERROR",JOptionPane.ERROR_MESSAGE);
+
+        }
 
     }
 }
