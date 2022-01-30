@@ -65,13 +65,7 @@ public class ClienteHilo extends Thread {
                         
                         break;
                     case 3:
-                    	System.out.print("Introduzca dia(1) ,mes(2) o año(3) para saber en cual estas: ");
-                        int txt = sn.nextInt();
-                        // Le mando al servidor el numero aleatorio
-                        out.writeInt(txt);
-                        // Recibo y muestro el mensaje
-                        mensaje = in.readUTF();
-                        System.out.println(mensaje);
+                    
                         break;
                     case 4:
                          break;
