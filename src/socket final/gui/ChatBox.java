@@ -1,5 +1,6 @@
 package gui;
 
+import seguridad.Cifrado;
 import socketC.Envios;
 
 import javax.swing.*;
@@ -23,6 +24,8 @@ public class ChatBox extends JFrame implements Runnable{
     Dimension screen=monitor.getScreenSize();
     int width = screen.width;
     int height= screen.height;
+    //anti MITM
+    final String secretKey = "llevalatararaunvestidoblancollenodecascabeles";
 
     String  ip;
     String nick ;
@@ -95,7 +98,7 @@ public class ChatBox extends JFrame implements Runnable{
                 chat.append("[Yo]=>"+tfmessage.getText()+"\n");
                 try {
                     Socket socket = new Socket("localhost",4444);
-                    Envios message = new Envios(nick,ip,tfmessage.getText()) ;
+                    Envios message = new Envios(nick,ip,Cifrado.encrypt(tfmessage.getText(),secretKey)) ;
                     ObjectOutputStream buffer = new ObjectOutputStream(socket.getOutputStream()) ;
                     buffer.writeObject(message);
                     buffer.close();
@@ -120,7 +123,7 @@ public class ChatBox extends JFrame implements Runnable{
                 ObjectInputStream input = new ObjectInputStream(client.getInputStream()) ;
                 Envios message = (Envios) input.readObject();
                 input.close();
-                chat.append("[" + message.getNick() + "] =>" + message.getMensaje() + "\n");
+                chat.append("[" + message.getNick() + "] =>" + Cifrado.decrypt(message.getMensaje(),secretKey) + "\n");
             }while(true) ;
         } catch (IOException e) {
             JOptionPane.showMessageDialog(null,"Ha habido un error a la hora de ponerse en escucha","ERROR",JOptionPane.ERROR_MESSAGE);

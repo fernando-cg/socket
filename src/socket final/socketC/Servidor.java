@@ -7,8 +7,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 public class Servidor {
     public static void main(String[] args){
@@ -16,7 +14,6 @@ public class Servidor {
         marco.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
 }
-//se pone hilo porque tiene que estar a la vez escuchando y exribiendo
 class MarcoServidor extends JFrame implements Runnable{
     private JTextArea areaTexto ;
     private JPanel panel;
@@ -54,29 +51,14 @@ class MarcoServidor extends JFrame implements Runnable{
                 buffer.close();
                 conexion.close();
                 if(message.charAt(0)=='/'){
-                    String retorno;
-                    try {
-                        String command = message.substring(1);
-                        if (command.length()>=8) {
-                            if(command.substring(0,8).equalsIgnoreCase("piramide")){
-                                try {
-                                    retorno = piramide(Integer.parseInt(command.substring(9)));
-                                } catch (NumberFormatException e) {
-                                    retorno = "Has introducido un formato incorrecto: /piramide numeroFilas";
-                                }
-                            }else{
-                                retorno = "Has introducido un formato incorrecto: /piramide numeroFilas";
-                            }
-                        } else if (command.equalsIgnoreCase("fecha")) {
-                            SimpleDateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
-                            Date date = new Date();
-                            retorno = formatter.format(date);
-                        } else {
-                            retorno = "El comando introducido no es correcto";
-                        }
-                    }catch (StringIndexOutOfBoundsException e){
-                        retorno = "Has introducido un comando erroneo" ;
-                    }
+                    //ejecucion en otro hilo
+                    Funciones fun = new Funciones(message) ;
+                    Thread funciones = new Thread(fun);
+                    funciones.start();
+                    funciones.join();
+                    String retorno = fun.getRetorno();
+
+                    //redireccion al mismo soket
                     Socket client = new Socket(conexion.getInetAddress(), 5555);
                     ObjectOutputStream bufferS = new ObjectOutputStream(client.getOutputStream());
                     packet.setMensaje(retorno);
@@ -98,25 +80,8 @@ class MarcoServidor extends JFrame implements Runnable{
             System.out.println("Ha habido un error al lanzar el socket");
         } catch (ClassNotFoundException e) {
             System.out.println("Ha habido un error al recibir el paquete ");
+        } catch (InterruptedException e) {
+            System.out.println("Se ha producido un error al ejecutar las funciones por hilos");
         }
-    }
-
-    public String piramide(int numFilas) throws IOException{
-
-        StringBuilder piramide = new StringBuilder();
-        for(int altura = 1; altura<=numFilas; altura++){
-            //Espacios en blanco
-            for(int blancos = 1; blancos<=numFilas-altura; blancos++){
-                piramide.append(" ");
-            }
-
-            //Asteriscos
-            for(int asteriscos=1; asteriscos<=(altura*2)-1; asteriscos++){
-               piramide.append("*");
-            }
-            piramide.append("\n") ;
-        }
-
-        return piramide.toString() ;
     }
 }
